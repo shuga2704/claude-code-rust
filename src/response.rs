@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs::read_to_string};
+use std::{collections::HashMap, fs::read_to_string, process::Command};
 
 use serde::{Deserialize, Serialize};
 
@@ -116,6 +116,12 @@ impl ToolCall {
                 let content = args.get("content").unwrap();
                 std::fs::write(file_path, content)?;
                 Message::Tool(ToolMessage::new(self.id.clone(), None))
+            }
+            ToolName::Bash => {
+                let command = args.get("command").unwrap();
+                let output = Command::new("sh").arg("-c").arg(command).output()?;
+                let content = String::from_utf8_lossy(&output.stdout).to_string();
+                Message::Tool(ToolMessage::new(self.id.clone(), Some(content)))
             }
         };
         Ok(result)

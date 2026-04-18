@@ -48,7 +48,7 @@ impl Chat {
         Chat {
             client: Client::with_config(config),
             model: "anthropic/claude-haiku-4.5".to_string(),
-            tools: vec![AgentTool::read(), AgentTool::write()],
+            tools: vec![AgentTool::read(), AgentTool::write(), AgentTool::bash()],
             max_tokens: 400,
             history: Prompt::new(),
         }

@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 pub enum ToolName {
     Read,
     Write,
+    Bash,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -51,6 +52,10 @@ impl AgentTool {
 
     pub fn write() -> Self {
         serde_json::from_str(include_str!("../tools/write.json")).unwrap()
+    }
+
+    pub fn bash() -> Self {
+        serde_json::from_str(include_str!("../tools/bash.json")).unwrap()
     }
 }
 
