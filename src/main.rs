@@ -38,6 +38,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             ],
             "model": "anthropic/claude-haiku-4.5",
+            "tools": [{
+                "type": "function",
+                "function": {
+                    "name": "Read",
+                    "description": "Read and return the contents of the file",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "file_path": {
+                                "type": "string",
+                                "description": "The path to the file to read"
+                            }
+                        },
+                        "required": ["file_path"],
+                    }
+                }
+            }]
         }))
         .await?;
 
