@@ -66,8 +66,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let message = &response["choices"][0]["message"];
         messages.push(to_value(&message)?);
 
-        println!("Response message from LLM: {}", message);
-
         if let Some(tool_calls) = message["tool_calls"].as_array() {
             let tool_call = &tool_calls[0];
             let name = tool_call["function"]["name"].as_str().unwrap();
