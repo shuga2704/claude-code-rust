@@ -1,6 +1,7 @@
 use async_openai::{config::OpenAIConfig, Client};
 use clap::Parser;
-use serde_json::{json, Value};
+use dotenvy::dotenv;
+use serde_json::{from_str, json, Value};
 use std::{env, process};
 
 #[derive(Parser)]
@@ -12,6 +13,18 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let _ = dotenv();
+
+    let is_local = std::env::var("LOCAL")
+        .map(|local| local == "true")
+        .unwrap_or(false);
+
+    let modal = if is_local {
+        "z-ai/glm-4.5-air:free"
+    } else {
+        "anthropic/claude-haiku-4.5"
+    };
+
     let args = Args::parse();
 
     let base_url = env::var("OPENROUTER_BASE_URL")
@@ -37,7 +50,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     "content": args.prompt
                 }
             ],
-            "model": "anthropic/claude-haiku-4.5",
+            "model": modal,
             "tools": [{
                 "type": "function",
                 "function": {
@@ -61,7 +74,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // You can use print statements as follows for debugging, they'll be visible when running tests.
     eprintln!("Logs from your program will appear here!");
 
-    if let Some(content) = response["choices"][0]["message"]["content"].as_str() {
+    let message = &response["choices"][0]["message"];
+
+    if let Some(tool_calls) = message["tool_calls"].as_array() {
+        let tool_call = &tool_calls[0];
+        let name = tool_call["function"]["name"].as_str().unwrap();
+
+        let args: Value = from_str(tool_call["function"]["args"].as_str().unwrap()).unwrap();
+
+        if name == "Read" {
+            let file_path = args["file_path"].as_str().unwrap();
+            let contents = std::fs::read_to_string(file_path)?;
+            println!("{}", contents);
+        }
+    } else if let Some(content) = message["content"].as_str() {
         println!("{}", content);
     }
 
