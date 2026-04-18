@@ -1,7 +1,7 @@
 use async_openai::{config::OpenAIConfig, Client};
 use clap::Parser;
 use dotenvy::dotenv;
-use serde_json::{from_str, json, Value};
+use serde_json::{from_str, json, to_value, Value};
 use std::{env, process};
 
 #[derive(Parser)]
@@ -20,7 +20,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or(false);
 
     let modal = if is_local {
-        "z-ai/glm-4.5-air:free"
+        "nvidia/nemotron-3-super-120b-a12b:free"
     } else {
         "anthropic/claude-haiku-4.5"
     };
@@ -41,54 +41,64 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let client = Client::with_config(config);
 
-    let response: Value = client
-        .chat()
-        .create_byot(json!({
-            "messages": [
-                {
-                    "role": "user",
-                    "content": args.prompt
-                }
-            ],
-            "model": modal,
-            "tools": [{
-                "type": "function",
-                "function": {
-                    "name": "Read",
-                    "description": "Read and return the contents of the file",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "file_path": {
-                                "type": "string",
-                                "description": "The path to the file to read"
-                            }
-                        },
-                        "required": ["file_path"],
+    let mut messages = vec![json!({"role": "user", "content": args.prompt})];
+
+    loop {
+        let response: Value = client
+            .chat()
+            .create_byot(json!({
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": args.prompt
                     }
-                }
-            }]
-        }))
-        .await?;
+                ],
+                "model": modal,
+                "tools": [{
+                    "type": "function",
+                    "function": {
+                        "name": "Read",
+                        "description": "Read and return the contents of the file",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "file_path": {
+                                    "type": "string",
+                                    "description": "The path to the file to read"
+                                }
+                            },
+                            "required": ["file_path"],
+                        }
+                    }
+                }]
+            }))
+            .await?;
 
-    // You can use print statements as follows for debugging, they'll be visible when running tests.
-    eprintln!("Logs from your program will appear here!");
+        let message = &response["choices"][0]["message"];
 
-    let message = &response["choices"][0]["message"];
+        messages.push(to_value(message)?);
 
-    if let Some(tool_calls) = message["tool_calls"].as_array() {
-        let tool_call = &tool_calls[0];
-        let name = tool_call["function"]["name"].as_str().unwrap();
+        println!("Response message from LLM: {}", message);
 
-        let args: Value = from_str(tool_call["function"]["arguments"].as_str().unwrap()).unwrap();
+        if let Some(tool_calls) = message["tool_calls"].as_array() {
+            let tool_call = &tool_calls[0];
+            let name = tool_call["function"]["name"].as_str().unwrap();
 
-        if name == "Read" {
-            let file_path = args["file_path"].as_str().unwrap();
-            let contents = std::fs::read_to_string(file_path)?;
-            println!("{}", contents);
+            let args: Value =
+                from_str(tool_call["function"]["arguments"].as_str().unwrap()).unwrap();
+
+            if name == "Read" {
+                let file_path = args["file_path"].as_str().unwrap();
+                let content = std::fs::read_to_string(file_path)?;
+
+                messages.push(
+                    json!({"role": "tool", "tool_call_id": tool_call["id"], "content": content}),
+                );
+            }
+        } else if let Some(content) = message["content"].as_str() {
+            println!("{}", content);
+            break;
         }
-    } else if let Some(content) = message["content"].as_str() {
-        println!("{}", content);
     }
 
     Ok(())
