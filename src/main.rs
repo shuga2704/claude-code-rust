@@ -80,7 +80,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let tool_call = &tool_calls[0];
         let name = tool_call["function"]["name"].as_str().unwrap();
 
-        let args: Value = from_str(tool_call["function"]["args"].as_str().unwrap()).unwrap();
+        let args: Value = from_str(tool_call["function"]["arguments"].as_str().unwrap()).unwrap();
 
         if name == "Read" {
             let file_path = args["file_path"].as_str().unwrap();
