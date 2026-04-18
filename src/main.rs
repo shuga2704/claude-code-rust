@@ -19,12 +19,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map(|local| local == "true")
         .unwrap_or(false);
 
-    let modal = if is_local {
-        "nvidia/nemotron-3-super-120b-a12b:free"
-    } else {
-        "anthropic/claude-haiku-4.5"
-    };
-
     let args = Args::parse();
 
     let base_url = env::var("OPENROUTER_BASE_URL")
@@ -48,7 +42,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .chat()
             .create_byot(json!({
                 "messages": messages,
-                "model": modal,
+                "model": env::var("OPENROUTER_MODEL").unwrap_or_else(|_| "anthropic/claude-haiku-4.5".to_string()),
                 "tools": [{
                     "type": "function",
                     "function": {
@@ -70,8 +64,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .await?;
 
         let message = &response["choices"][0]["message"];
-
-        messages.push(to_value(message)?);
+        messages.push(to_value(&message)?);
 
         println!("Response message from LLM: {}", message);
 
