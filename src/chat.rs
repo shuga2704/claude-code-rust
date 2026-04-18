@@ -1,4 +1,5 @@
 use async_openai::{config::OpenAIConfig, Client};
+use std::env;
 
 use crate::{
     message::Message,
@@ -47,7 +48,8 @@ impl Chat {
     pub fn default(config: OpenAIConfig) -> Self {
         Chat {
             client: Client::with_config(config),
-            model: "anthropic/claude-haiku-4.5".to_string(),
+            model: env::var("OPENROUTER_MODEL")
+                .unwrap_or("nvidia/nemotron-3-super-120b-a12b:free".to_string()),
             tools: vec![AgentTool::read(), AgentTool::write(), AgentTool::bash()],
             max_tokens: 400,
             history: Prompt::new(),

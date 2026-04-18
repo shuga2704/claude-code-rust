@@ -1,35 +1,53 @@
-[![progress-banner](https://backend.codecrafters.io/progress/claude-code/99bc0f7d-4a80-4502-b723-e1f870f866af)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
+# claude-code-rust
 
-This is a starting point for Rust solutions to the
-["Build Your own Claude Code" Challenge](https://codecrafters.io/challenges/claude-code).
+Небольшой CLI-агент на Rust, который отправляет пользовательский запрос в LLM через OpenRouter, умеет принимать
+`tool_calls` от модели и выполнять три инструмента:
 
-Claude Code is an AI coding assistant that uses Large Language Models (LLMs) to
-understand code and perform actions through tool calls. In this challenge,
-you'll build your own Claude Code from scratch by implementing an LLM-powered
-coding assistant.
+- чтение файла
+- запись файла
+- запуск shell-команды
 
-Along the way you'll learn about HTTP RESTful APIs, OpenAI-compatible tool
-calling, agent loop, and how to integrate multiple tools into an AI assistant.
+Проект сделан как учебная реализация "своего Claude Code": здесь есть базовый агентный цикл, история сообщений, описание
+инструментов и преобразование ответов модели в реальные действия на локальной машине.
+Агент может не только ответить текстом, но и прочитать файл, записать файл или выполнить команду, а затем продолжить
+рассуждение уже с учетом результата.
 
-**Note**: If you're viewing this repo on GitHub, head over to
-[codecrafters.io](https://codecrafters.io) to try the challenge.
+## Как пользоваться
 
-# Passing the first stage
+### 1. Требования
 
-The entry point for your `claude-code` implementation is in `src/main.rs`. Study
-and uncomment the relevant code, and submit to pass the first stage:
+Нужно установить:
 
-```sh
-codecrafters submit
+- Rust toolchain
+- Cargo
+- ключ OpenRouter API
+
+### 2. Настройка окружения
+
+Скопируйте пример:
+
+```bash
+cp .env.example .env
 ```
 
-# Stage 2 & beyond
+Заполните минимум:
 
-Note: This section is for stages 2 and beyond.
+```env
+OPENROUTER_MODEL=nvidia/nemotron-3-super-120b-a12b:free
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+```
 
-1. Ensure you have `cargo (1.94)` installed locally.
-2. Run `./your_program.sh` to run your program, which is implemented in
-   `src/main.rs`. This command compiles your Rust project, so it might be slow
-   the first time you run it. Subsequent runs will be fast.
-3. Run `codecrafters submit` to submit your solution to CodeCrafters. Test
-   output will be streamed to your terminal.
+### 3. Запуск
+
+Через Cargo:
+
+```bash
+cargo run -- --prompt "Прочитай Cargo.toml и кратко опиши проект"
+```
+
+Или через локальный обертчик:
+
+```bash
+./run.sh --prompt "Покажи содержимое src/main.rs"
+```
